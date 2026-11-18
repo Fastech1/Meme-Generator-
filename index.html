@@ -9,16 +9,25 @@ select,input{padding:12px;margin:8px;width:90%;max-width:420px;border-radius:10p
 button{padding:12px 18px;background:#25D366;color:#000;border:none;border-radius:10px;font-weight:bold;font-size:15px;cursor:pointer;margin:5px}
 button.random{background:#FFD700}
 button.download{background:#fff}
-img{max-width:95%;border-radius:12px;margin-top:15px;border:3px solid #fff}
+button.upload{background:#7C4DFF;color:#fff}
+button.mode{background:#333;color:#fff}
+button.mode.active{background:#fff;color:#000}
+img,canvas{max-width:95%;border-radius:12px;margin-top:15px;border:3px solid #fff}
 .caption-box{background:#222;padding:15px;border-radius:12px;max-width:420px;margin:15px auto;text-align:left}
 .caption-box p{margin:6px 0;cursor:pointer;padding:8px;border-radius:8px}
 .caption-box p:hover{background:#333}
+input[type=file]{background:#222;color:#fff;padding:15px}
+.tip{color:#aaa;font-size:13px}
 </style>
 </head>
 <body>
 <h1>😂 Meme Generator</h1>
 <p>Tap a caption, generate, share. No typing needed.</p>
 
+<button class="mode active" id="btnTemplate" onclick="setMode('template')">Use Template</button>
+<button class="mode" id="btnUpload" onclick="setMode('upload')">Upload Your Photo 📸</button>
+
+<div id="templateSection">
 <select id="template">
 <option value="drake">Drake - Yes / No</option>
 <option value="distracted">Distracted Boyfriend</option>
@@ -31,6 +40,13 @@ img{max-width:95%;border-radius:12px;margin-top:15px;border:3px solid #fff}
 <option value="waiting">Waiting Skeleton</option>
 <option value="spiderman">Spider-Man Pointing</option>
 </select><br>
+</div>
+
+<div id="uploadSection" style="display:none">
+<p><b>1. Choose a photo</b></p>
+<input type="file" id="fileInput" accept="image/*" onchange="loadImage(event)"><br>
+<p class="tip">Your photo stays on your phone, we don't upload it to any server.</p>
+</div>
 
 <input id="top" placeholder="Top Text"><br>
 <input id="bottom" placeholder="Bottom Text"><br>
@@ -41,7 +57,10 @@ img{max-width:95%;border-radius:12px;margin-top:15px;border:3px solid #fff}
 <button onclick="shareMeme()">Share on WhatsApp</button>
 
 <br>
+<!-- For template mode -->
 <img id="meme" src="https://api.memegen.link/images/drake/Sapa_is_real/But_God_dey.png">
+<!-- For upload mode -->
+<canvas id="canvas" style="display:none"></canvas>
 
 <div class="caption-box">
 <h3>🔥 Trending Captions (Tap to use)</h3>
@@ -49,6 +68,82 @@ img{max-width:95%;border-radius:12px;margin-top:15px;border:3px solid #fff}
 </div>
 
 <script>
+let mode = 'template';
+let uploadedImg = null;
+
+function setMode(m){
+  mode = m;
+  document.getElementById('btnTemplate').classList.toggle('active', m==='template');
+  document.getElementById('btnUpload').classList.toggle('active', m==='upload');
+  document.getElementById('templateSection').style.display = m==='template' ? 'block' : 'none';
+  document.getElementById('uploadSection').style.display = m==='upload' ? 'block' : 'none';
+  document.getElementById('meme').style.display = m==='template' ? 'block' : 'none';
+  document.getElementById('canvas').style.display = m==='upload' ? 'block' : 'none';
+  if(m==='upload' && uploadedImg) drawCanvas();
+}
+
+function loadImage(e){
+  let file = e.target.files[0];
+  if(!file) return;
+  let reader = new FileReader();
+  reader.onload = function(ev){
+    uploadedImg = new Image();
+    uploadedImg.onload = function(){ drawCanvas(); };
+    uploadedImg.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function drawCanvas(){
+  if(!uploadedImg) return;
+  let canvas = document.getElementById('canvas');
+  let ctx = canvas.getContext('2d');
+  // Resize to max 600px wide for WhatsApp
+  let w = uploadedImg.width;
+  let h = uploadedImg.height;
+  let maxW = 600;
+  if(w > maxW){ h = h * maxW / w; w = maxW; }
+  canvas.width = w;
+  canvas.height = h;
+  ctx.drawImage(uploadedImg, 0, 0, w, h);
+
+  let top = document.getElementById('top').value || "";
+  let bottom = document.getElementById('bottom').value || "";
+  let fontSize = Math.floor(w / 10);
+  ctx.font = `bold ${fontSize}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.lineWidth = fontSize / 5;
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'white';
+
+  function drawText(text, y){
+    // Wrap long text
+    let words = text.toUpperCase().split(' ');
+    let lines = [];
+    let line = '';
+    words.forEach(word=>{
+      let test = line + word + ' ';
+      if(ctx.measureText(test).width > w - 20 && line){
+        lines.push(line); line = word + ' ';
+      } else line = test;
+    });
+    lines.push(line);
+    lines.forEach((l,i)=>{
+      let yy = y + (i * (fontSize + 5));
+      ctx.strokeText(l.trim(), w/2, yy);
+      ctx.fillText(l.trim(), w/2, yy);
+    });
+    return lines.length;
+  }
+
+  if(top) drawText(top, fontSize + 10);
+  if(bottom){
+    // Draw bottom from bottom up
+    let lines = bottom.toUpperCase().split(' ').length > 5 ? 2 : 1;
+    drawText(bottom, h - 20 - (lines-1)*(fontSize+5));
+  }
+}
+
 const captions = [
   {top:"When NEPA takes light", bottom:"Me with my power bank"},
   {top:"Sapa is real", bottom:"But God dey"},
@@ -97,20 +192,38 @@ function clean(s){
   return s.replace(/ /g,'_').replace(/\?/g,'~q').replace(/&/g,'~a').replace(/#/g,'~h').replace(/%/g,'~p');
 }
 function makeMeme(){
-  let t = document.getElementById('template').value;
-  let top = document.getElementById('top').value || "Top Text";
-  let bottom = document.getElementById('bottom').value || "Bottom Text";
-  document.getElementById('meme').src = `https://api.memegen.link/images/${t}/${clean(top)}/${clean(bottom)}.png`;
+  if(mode==='upload'){
+    if(!uploadedImg){ alert('First upload a photo! 📸'); return; }
+    drawCanvas();
+  } else {
+    let t = document.getElementById('template').value;
+    let top = document.getElementById('top').value || "Top Text";
+    let bottom = document.getElementById('bottom').value || "Bottom Text";
+    document.getElementById('meme').src = `https://api.memegen.link/images/${t}/${clean(top)}/${clean(bottom)}.png`;
+  }
 }
 function downloadMeme(){
-  let a = document.createElement('a');
-  a.href = document.getElementById('meme').src;
-  a.download = 'meme.png';
-  a.click();
+  if(mode==='upload'){
+    let canvas = document.getElementById('canvas');
+    let a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'my-meme.png';
+    a.click();
+  } else {
+    let a = document.createElement('a');
+    a.href = document.getElementById('meme').src;
+    a.download = 'meme.png';
+    a.click();
+  }
 }
 function shareMeme(){
-  let url = document.getElementById('meme').src;
-  window.open(`https://wa.me/?text=Check my meme 😂 ${encodeURIComponent(url)}`);
+  if(mode==='upload'){
+    alert('For uploaded photos: Tap Download first, then share the image from your gallery to WhatsApp.');
+    downloadMeme();
+  } else {
+    let url = document.getElementById('meme').src;
+    window.open(`https://wa.me/?text=Check my meme 😂 ${encodeURIComponent(url)}`);
+  }
 }
 showCaptions();
 </script>
