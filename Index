@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Meme Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:sans-serif;background:#111;color:#fff;text-align:center;padding:20px}
+select,input{padding:12px;margin:8px;width:90%;max-width:420px;border-radius:10px;border:none;font-size:16px}
+button{padding:12px 18px;background:#25D366;color:#000;border:none;border-radius:10px;font-weight:bold;font-size:15px;cursor:pointer;margin:5px}
+button.random{background:#FFD700}
+button.download{background:#fff}
+img{max-width:95%;border-radius:12px;margin-top:15px;border:3px solid #fff}
+.caption-box{background:#222;padding:15px;border-radius:12px;max-width:420px;margin:15px auto;text-align:left}
+.caption-box p{margin:6px 0;cursor:pointer;padding:8px;border-radius:8px}
+.caption-box p:hover{background:#333}
+</style>
+</head>
+<body>
+<h1>😂 Meme Generator</h1>
+<p>Tap a caption, generate, share. No typing needed.</p>
+
+<select id="template">
+<option value="drake">Drake - Yes / No</option>
+<option value="distracted">Distracted Boyfriend</option>
+<option value="two-buttons">Two Buttons - Hard Choice</option>
+<option value="buzz">Buzz Lightyear - Everywhere</option>
+<option value="doge">Doge</option>
+<option value="disastergirl">Disaster Girl</option>
+<option value="change-my-mind">Change My Mind</option>
+<option value="gru">Gru's Plan</option>
+<option value="waiting">Waiting Skeleton</option>
+<option value="spiderman">Spider-Man Pointing</option>
+</select><br>
+
+<input id="top" placeholder="Top Text"><br>
+<input id="bottom" placeholder="Bottom Text"><br>
+
+<button class="random" onclick="randomNaija()">🎲 Random Caption</button><br>
+<button onclick="makeMeme()">Generate Meme 🔥</button>
+<button class="download" onclick="downloadMeme()">Download</button>
+<button onclick="shareMeme()">Share on WhatsApp</button>
+
+<br>
+<img id="meme" src="https://api.memegen.link/images/drake/Sapa_is_real/But_God_dey.png">
+
+<div class="caption-box">
+<h3>🔥 Trending Captions (Tap to use)</h3>
+<div id="captionList"></div>
+</div>
+
+<script>
+const captions = [
+  {top:"When NEPA takes light", bottom:"Me with my power bank"},
+  {top:"Sapa is real", bottom:"But God dey"},
+  {top:"Village people", bottom:"When they see me progressing"},
+  {top:"Fuel price don go up again", bottom:"Me trekking to work"},
+  {top:"Lagos traffic", bottom:"Me wey leave house 5am"},
+  {top:"When salary enters", bottom:"When landlord knocks"},
+  {top:"My mum: Go and...", bottom:"Me: I was just about to"},
+  {top:"When exam is tomorrow", bottom:"Me starting to read by 11pm"},
+  {top:"Nigerian parents", bottom:"You want to explain yourself?"},
+  {top:"When you hear 'We need to talk'", bottom:"My heart don cut"},
+  {top:"Data don finish", bottom:"Me using free mode"},
+  {top:"When your crush replies", bottom:"Me replying in 0.1 seconds"},
+  {top:"Bolt price: 8k", bottom:"Me: I go trek, na exercise"},
+  {top:"When PHCN brings bill", bottom:"But light no dey"},
+  {top:"Jollof rice at party", bottom:"Me guarding my plate"},
+  {top:"When your friend owes you", bottom:"But e dey post for club"},
+  {top:"Monday morning", bottom:"Me pretending to work"},
+  {top:"When Nigeria wins match", bottom:"Everybody na coach"},
+  {top:"My account balance", bottom:"My shopping list"},
+  {top:"When they say 'No wahala'", bottom:"Wahala don full ground"},
+  {top:"When you mistakenly send voice note", bottom:"To your boss"},
+  {top:"School resumption", bottom:"Me with empty pocket"},
+  {top:"When generator noise stops", bottom:"Everybody: NEPA don bring light"},
+  {top:"My last card", bottom:"My remaining 50 naira"}
+];
+
+function showCaptions(){
+  let html = "";
+  captions.forEach((c,i)=>{
+    html += `<p onclick="useCaption(${i})">👉 <b>${c.top}</b> / ${c.bottom}</p>`;
+  });
+  document.getElementById('captionList').innerHTML = html;
+}
+function useCaption(i){
+  document.getElementById('top').value = captions[i].top;
+  document.getElementById('bottom').value = captions[i].bottom;
+  makeMeme();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function randomNaija(){
+  let r = Math.floor(Math.random()*captions.length);
+  useCaption(r);
+}
+function clean(s){
+  return s.replace(/ /g,'_').replace(/\?/g,'~q').replace(/&/g,'~a').replace(/#/g,'~h').replace(/%/g,'~p');
+}
+function makeMeme(){
+  let t = document.getElementById('template').value;
+  let top = document.getElementById('top').value || "Top Text";
+  let bottom = document.getElementById('bottom').value || "Bottom Text";
+  document.getElementById('meme').src = `https://api.memegen.link/images/${t}/${clean(top)}/${clean(bottom)}.png`;
+}
+function downloadMeme(){
+  let a = document.createElement('a');
+  a.href = document.getElementById('meme').src;
+  a.download = 'meme.png';
+  a.click();
+}
+function shareMeme(){
+  let url = document.getElementById('meme').src;
+  window.open(`https://wa.me/?text=Check my meme 😂 ${encodeURIComponent(url)}`);
+}
+showCaptions();
+</script>
+</body>
+</html>
